@@ -32,3 +32,5 @@ flutter:
       android:
         package: com.zakaria5729.flutter_native_speech_to_text
         pluginClass: FlutterNativeSpeechToTextPlugin
+      ios:
+        pluginClass: FlutterNativeSpeechToTextPlugin

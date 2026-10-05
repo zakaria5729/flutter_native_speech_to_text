@@ -23,7 +23,7 @@ A lightweight Flutter plugin for speech-to-text recognition leveraging Android's
 | Platform | Supported | Notes |
 |:---:|:---:|:---|
 | Android | ✅ | Requires device with Google Play Services or Speech Recognizer installed (API 24+) |
-| iOS | ❌ | Not currently supported |
+| iOS | ⚠️ | Safe stub only: never crashes, reports a `PLATFORM_NOT_SUPPORTED` error instead (see [iOS behaviour](#ios-behaviour)) |
 | Web / Desktop | ❌ | Not currently supported |
 
 ---
@@ -176,6 +176,38 @@ When a `SpeechToTextException` is thrown, the `code` property provides specific 
 | `ALREADY_LISTENING` | A speech recognition session is already in progress. |
 | `DISABLED` | The `isEnable` flag was passed as `false`. |
 | `ERROR` | An exception occurred while launching the intent. |
+| `PLATFORM_NOT_SUPPORTED` | The method was called on iOS, which is not supported yet (no crash, just this error). |
+| `MISSING_PLUGIN` | The native side of the plugin is not registered in the current binary (e.g. plugin missing from a release build). |
+
+---
+
+## iOS behaviour
+
+The package ships with an iOS entry point purely so that iOS builds of your app
+**link and run normally instead of crashing** (a missing plugin registration on
+iOS causes `MissingPluginException`, and any native speech call would abort).
+
+On iOS every call fails *gracefully*:
+
+| Call | iOS result |
+|------|------------|
+| `FlutterNativeSpeechToText.isAvailable()` | returns `false` (so UIs can disable the mic button) |
+| `FlutterNativeSpeechToText.listen(...)` | throws `SpeechToTextException(code: 'PLATFORM_NOT_SUPPORTED')` |
+| `FlutterNativeSpeechToText.stop()` / `.cancel()` | throws `SpeechToTextException(code: 'PLATFORM_NOT_SUPPORTED')` |
+
+Nothing is executed natively on iOS - no microphone permission is requested, no
+`Info.plist` keys are required, and no Objective-C/Swift exception can escape.
+Errors are converted to a normal Dart exception and printed with `debugPrint`,
+so you can show and log them:
+
+```dart
+try {
+  final result = await FlutterNativeSpeechToText.listen();
+} on SpeechToTextException catch (e) {
+  debugPrint('Speech error: ${e.message} (code: ${e.code})');
+  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+}
+```
 
 ---
 

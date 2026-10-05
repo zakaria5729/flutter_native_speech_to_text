@@ -18,6 +18,9 @@ class FlutterNativeSpeechToText {
     } on PlatformException catch (e) {
       debugPrint('Error checking availability: ${e.message}');
       return false;
+    } on MissingPluginException catch (e) {
+      debugPrint('MissingPluginException (iOS stub or release build): $e');
+      return false;
     }
   }
 
@@ -94,6 +97,12 @@ class FlutterNativeSpeechToText {
       return SpeechResult.fromMap(result);
     } on PlatformException catch (e) {
       throw SpeechToTextException(e.message ?? 'Unknown error', code: e.code);
+    } on MissingPluginException catch (e) {
+      debugPrint('MissingPluginException (iOS stub or release build): $e');
+      throw SpeechToTextException(
+        'Speech recognition not available on this platform (iOS is not supported)',
+        code: 'PLATFORM_NOT_SUPPORTED',
+      );
     }
   }
 
@@ -103,6 +112,12 @@ class FlutterNativeSpeechToText {
       await _channel.invokeMethod('stop');
     } on PlatformException catch (e) {
       throw SpeechToTextException(e.message ?? 'Failed to stop', code: e.code);
+    } on MissingPluginException catch (e) {
+      debugPrint('MissingPluginException (iOS stub or release build): $e');
+      throw SpeechToTextException(
+        'Speech recognition not available on this platform',
+        code: 'PLATFORM_NOT_SUPPORTED',
+      );
     }
   }
 
@@ -113,6 +128,12 @@ class FlutterNativeSpeechToText {
     } on PlatformException catch (e) {
       throw SpeechToTextException(e.message ?? 'Failed to cancel',
           code: e.code);
+    } on MissingPluginException catch (e) {
+      debugPrint('MissingPluginException (iOS stub or release build): $e');
+      throw SpeechToTextException(
+        'Speech recognition not available on this platform',
+        code: 'PLATFORM_NOT_SUPPORTED',
+      );
     }
   }
 }

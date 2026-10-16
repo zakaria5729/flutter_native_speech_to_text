@@ -3,13 +3,14 @@
 [![pub package](https://img.shields.io/pub/v/flutter_native_speech_to_text.svg)](https://pub.dev/packages/flutter_native_speech_to_text)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-A lightweight Flutter plugin for speech-to-text recognition leveraging Android's native `RecognizerIntent.ACTION_RECOGNIZE_SPEECH`.
+A lightweight Flutter plugin for speech-to-text recognition leveraging Android's native `RecognizerIntent.ACTION_RECOGNIZE_SPEECH` and the browser's Web Speech API on web.
 
 ---
 
 ## Features
 
 - 🎯 **Native Android Integration**: Direct access to Android's built-in `RecognizerIntent.ACTION_RECOGNIZE_SPEECH` dialog.
+- 🌍 **Web Support**: Runs in Chrome, Edge and Safari through the Web Speech API with the same Dart API.
 - ⚙️ **Fully Configurable**: Exposes all major `RecognizerIntent` extras as typed Dart parameters.
 - 🌐 **Multi-language Support**: Specify custom language codes (e.g., `en-US`, `bn-BD`, `es-ES`).
 - 📊 **Detailed Results**: Access primary transcription, alternate transcript hypotheses, and confidence scores.
@@ -24,7 +25,8 @@ A lightweight Flutter plugin for speech-to-text recognition leveraging Android's
 |:---:|:---:|:---|
 | Android | ✅ | Requires device with Google Play Services or Speech Recognizer installed (API 24+) |
 | iOS | ⚠️ | Safe stub only: never crashes, reports a `PLATFORM_NOT_SUPPORTED` error instead (see [iOS behaviour](#ios-behaviour)) |
-| Web / Desktop | ❌ | Not currently supported |
+| Web | ✅ | Uses the browser's Web Speech API (see [Web behaviour](#web-behaviour)) |
+| Desktop | ❌ | Not currently supported |
 
 ---
 
@@ -177,7 +179,33 @@ When a `SpeechToTextException` is thrown, the `code` property provides specific 
 | `DISABLED` | The `isEnable` flag was passed as `false`. |
 | `ERROR` | An exception occurred while launching the intent. |
 | `PLATFORM_NOT_SUPPORTED` | The method was called on iOS, which is not supported yet (no crash, just this error). |
+| `PERMISSION_DENIED` | *(Web)* Microphone permission was denied. |
+| `NO_MICROPHONE` | *(Web)* No usable microphone was found. |
+| `NETWORK` | *(Web)* The browser's speech service could not be reached. |
+| `LANGUAGE_NOT_SUPPORTED` | *(Web)* The requested `language` is not supported by the browser. |
 | `MISSING_PLUGIN` | The native side of the plugin is not registered in the current binary (e.g. plugin missing from a release build). |
+
+---
+
+## Web behaviour
+
+On web the plugin uses the browser's [Web Speech API](https://developer.mozilla.org/docs/Web/API/SpeechRecognition).
+No setup or extra dependencies are needed - the same `listen()`, `stop()`, `cancel()`
+and `isAvailable()` calls work unchanged.
+
+- **Browser support**: Chrome, Edge and Safari. Firefox does not implement speech
+  recognition, so `isAvailable()` returns `false` and `listen()` throws `NO_RECOGNIZER`.
+- **Secure context**: the page must be served over HTTPS (or `localhost`), and the
+  user must grant microphone permission when prompted.
+- **Server-side recognition**: Chrome sends audio to Google's servers, so an internet
+  connection is required.
+- **Single utterance**: like Android, `listen()` completes after one utterance (or
+  when you call `stop()`); `cancel()` completes it with an empty result.
+- **Supported parameters**: `language` / `languagePreference` (default `bn-BD`),
+  `partialResults` (enables interim hypotheses internally), `maxResults`
+  (alternatives count) and `isEnable`. Android-only options (`prompt`, silence
+  lengths, `getAudio`, ...) are ignored.
+- `confidenceScores` and `alternativeResults` are filled from the browser's result.
 
 ---
 

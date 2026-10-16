@@ -1,3 +1,12 @@
+## 1.1.0
+
+* Added web support using the browser's Web Speech API (`SpeechRecognition` /
+  `webkitSpeechRecognition`), exposed through the existing `listen`, `stop`,
+  `cancel` and `isAvailable` API.
+* New error codes on web: `PERMISSION_DENIED`, `NO_MICROPHONE`, `NETWORK`,
+  `LANGUAGE_NOT_SUPPORTED`.
+* Minimum SDK raised to Dart 3.4 / Flutter 3.22.
+
 ## 1.0.0
 
 * Initial release of the plugin.

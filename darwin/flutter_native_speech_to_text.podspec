@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = 'flutter_native_speech_to_text'
-  s.version          = '1.2.0'
+  s.version          = '1.3.0'
   s.summary          = 'Native speech-to-text for Flutter on Android, iOS, macOS and web.'
   s.description      = <<-DESC
 Speech-to-text using Android's RecognizerIntent, Apple's Speech framework on iOS and macOS, and the Web Speech API on web.

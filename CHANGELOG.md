@@ -1,3 +1,12 @@
+## 1.3.0
+
+* Windows: real speech recognition using the Windows speech recognizer
+  (`Windows.Media.SpeechRecognition`), replacing the stub.
+* Linux: speech recognition using Vosk and PulseAudio, loaded at runtime. It needs
+  `libvosk`, `libpulse-simple` and a `VOSK_MODEL_PATH` folder of models; without them
+  `isAvailable()` is `false` and `listen()` throws `NO_RECOGNIZER`.
+* The Windows and Linux implementations have not been tested on those platforms yet.
+
 ## 1.2.0
 
 * Added iOS and macOS support using Apple's Speech framework (`SFSpeechRecognizer`),

@@ -8,11 +8,14 @@
 
 namespace flutter_native_speech_to_text {
 
+class MainThreadQueue;
+struct ListenState;
+
 class FlutterNativeSpeechToTextPlugin : public flutter::Plugin {
  public:
   static void RegisterWithRegistrar(flutter::PluginRegistrarWindows *registrar);
 
-  FlutterNativeSpeechToTextPlugin();
+  explicit FlutterNativeSpeechToTextPlugin(flutter::PluginRegistrarWindows *registrar);
 
   virtual ~FlutterNativeSpeechToTextPlugin();
 
@@ -22,6 +25,15 @@ class FlutterNativeSpeechToTextPlugin : public flutter::Plugin {
   void HandleMethodCall(
       const flutter::MethodCall<flutter::EncodableValue> &method_call,
       std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result);
+
+ private:
+  void Listen(const flutter::EncodableMap *args,
+              std::shared_ptr<flutter::MethodResult<flutter::EncodableValue>> result);
+
+  flutter::PluginRegistrarWindows *registrar_;
+  int window_proc_id_ = -1;
+  std::shared_ptr<MainThreadQueue> queue_;
+  std::shared_ptr<ListenState> active_;
 };
 
 }  // namespace flutter_native_speech_to_text

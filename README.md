@@ -3,7 +3,7 @@
 [![pub package](https://img.shields.io/pub/v/flutter_native_speech_to_text.svg)](https://pub.dev/packages/flutter_native_speech_to_text)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-A lightweight Flutter plugin for speech-to-text recognition with one Dart API on every platform: Android's native `RecognizerIntent.ACTION_RECOGNIZE_SPEECH`, Apple's Speech framework on iOS and macOS, and the browser's Web Speech API on web.
+A lightweight Flutter plugin for speech-to-text recognition with one Dart API on every platform: Android's native `RecognizerIntent.ACTION_RECOGNIZE_SPEECH`, Apple's Speech framework on iOS and macOS, the Windows speech recognizer, Vosk on Linux, and the browser's Web Speech API on web.
 
 ---
 
@@ -13,7 +13,7 @@ A lightweight Flutter plugin for speech-to-text recognition with one Dart API on
 - 🍎 **iOS and macOS**: Uses Apple's Speech framework, with no extra dependencies.
 - 🌍 **Web Support**: Runs in Chrome, Edge and Safari through the Web Speech API with the same Dart API.
 - 🔎 **Language Check**: `isLanguageSupported()` tells you whether a language works on the current platform.
-- 🛡️ **Safe Everywhere**: Windows and Linux never crash; they report `PLATFORM_NOT_SUPPORTED`.
+- 🖥️ **Desktop**: Windows uses the built-in recognizer; Linux uses Vosk when installed.
 - ⚙️ **Fully Configurable**: Exposes all major `RecognizerIntent` extras as typed Dart parameters.
 - 🌐 **Multi-language Support**: Specify custom language codes (e.g., `en-US`, `bn-BD`, `es-ES`).
 - 📊 **Detailed Results**: Access primary transcription, alternate transcript hypotheses, and confidence scores.
@@ -30,7 +30,8 @@ A lightweight Flutter plugin for speech-to-text recognition with one Dart API on
 | iOS | ✅ | Apple Speech framework; Bengali is not supported by Apple (see [iOS and macOS](#ios-and-macos)) |
 | macOS | ✅ | Apple Speech framework (see [iOS and macOS](#ios-and-macos)) |
 | Web | ✅ | Uses the browser's Web Speech API (see [Web behaviour](#web-behaviour)) |
-| Windows / Linux | ⚠️ | Safe stub: never crashes, `listen()` fails with `PLATFORM_NOT_SUPPORTED` |
+| Windows | ⚠️ | Windows speech recognizer (untested, see [Windows](#windows)) |
+| Linux | ⚠️ | Vosk + PulseAudio, loaded at runtime (untested, see [Linux](#linux)) |
 
 ---
 
@@ -40,7 +41,7 @@ Add `flutter_native_speech_to_text` to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  flutter_native_speech_to_text: ^1.2.0
+  flutter_native_speech_to_text: ^1.3.0
 ```
 
 Or run:
@@ -186,7 +187,8 @@ if (await FlutterNativeSpeechToText.isLanguageSupported('bn-BD')) {
 | iOS / macOS | `true` only for languages in Apple's supported list (`bn-BD` is `false`) |
 | Android | Uses the recognizer's language list. If the device reports none, returns `true` |
 | Web | `true` when the browser has speech recognition. Browsers do not list languages, so an unsupported language is reported by `listen()` instead |
-| Windows / Linux | always `false` |
+| Windows | `true` for languages in the Windows speech recognizer's list |
+| Linux | `true` when a model folder for the language exists in `VOSK_MODEL_PATH` |
 
 A bare code such as `en` matches any region (`en-US`, `en-GB`, ...).
 
@@ -209,12 +211,12 @@ When a `SpeechToTextException` is thrown, the `code` property provides specific 
 
 | Code | Reason |
 |------|--------|
-| `NO_RECOGNIZER` | No speech recognizer service is installed or active on the device. |
+| `NO_RECOGNIZER` | No speech recognizer service is installed or active on the device (on Linux, Vosk or PulseAudio is missing). |
 | `NO_CONTEXT` | Android activity context was null or detached. |
 | `ALREADY_LISTENING` | A speech recognition session is already in progress. |
 | `DISABLED` | The `isEnable` flag was passed as `false`. |
 | `ERROR` | An exception occurred while launching the intent. |
-| `PLATFORM_NOT_SUPPORTED` | The platform has no implementation (Windows, Linux). |
+| `PLATFORM_NOT_SUPPORTED` | The platform has no implementation. |
 | `PERMISSION_DENIED` | *(Web)* Microphone permission was denied. |
 | `SERVICE_NOT_ALLOWED` | *(Web)* The browser blocked its speech service, for example Safari with Dictation off or the language not installed. |
 | `NO_MICROPHONE` | *(Web)* No usable microphone was found. |
@@ -290,20 +292,38 @@ Notes:
   ignored.
 - Some languages need an internet connection for recognition.
 
-## Windows and Linux
+## Windows
 
-These platforms ship a native stub so builds link and run without crashing, but speech
-recognition is not implemented yet. `isAvailable()` and `isLanguageSupported()` return
-`false`, and `listen()`, `stop()` and `cancel()` throw
-`SpeechToTextException(code: 'PLATFORM_NOT_SUPPORTED')`, so your UI can disable the mic button.
+Uses the built-in Windows speech recognizer (`Windows.Media.SpeechRecognition`). No dialog
+is shown. `listen()` records until about five seconds of silence, or the value of
+`speechInputCompleteSilenceLengthMillis`, then returns the result.
 
-```dart
-try {
-  final result = await FlutterNativeSpeechToText.listen(language: 'en-US');
-} on SpeechToTextException catch (e) {
-  debugPrint('Speech error: ${e.message} (code: ${e.code})');
-}
-```
+- Turn on **Settings > Privacy & security > Speech > Online speech recognition**, otherwise
+  `listen()` throws `PERMISSION_DENIED`.
+- Allow desktop apps to use the microphone in **Settings > Privacy & security > Microphone**.
+- Only the languages installed for Windows speech recognition work. Other languages, which
+  may include Bengali, throw `LANGUAGE_NOT_SUPPORTED`.
+- Supported parameters: `language` / `languagePreference`, `maxResults`,
+  `speechInputCompleteSilenceLengthMillis` and `isEnable`.
+- This implementation has not been tested on a Windows machine yet.
+
+## Linux
+
+Linux has no built-in speech engine, so the plugin uses [Vosk](https://alphacephei.com/vosk/)
+for recognition and PulseAudio for the microphone. Both are loaded at runtime, so your app
+builds and runs without them and only needs them for recognition:
+
+1. Install `libvosk.so` (so the loader can find it) and `libpulse-simple` (for example the
+   `libpulse0` package).
+2. Download Vosk models and put each in its own folder named after its language tag under one
+   directory, for example `models/en-us` and `models/bn-bd`.
+3. Set the `VOSK_MODEL_PATH` environment variable to that directory.
+
+Without these, `isAvailable()` returns `false` and `listen()` throws `NO_RECOGNIZER`. A language
+with no model folder throws `LANGUAGE_NOT_SUPPORTED`. Recognition ends when Vosk detects the
+end of an utterance, so `speechInputCompleteSilenceLengthMillis` is ignored, and
+`confidenceScores` is not filled. Vosk's available languages depend on the models you download.
+This implementation has not been tested on Linux yet.
 
 ---
 

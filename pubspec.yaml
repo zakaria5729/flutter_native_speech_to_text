@@ -1,16 +1,16 @@
 name: flutter_native_speech_to_text
-description: A Flutter plugin for native speech-to-text using Android's RecognizerIntent ACTION_RECOGNIZE_SPEECH and the browser's Web Speech API on web.
-version: 1.1.1
+description: A Flutter plugin for native speech-to-text using Android's RecognizerIntent, Apple's Speech framework on iOS and macOS, and the Web Speech API on web. Windows and Linux fail safely.
+version: 1.2.0
 homepage: https://github.com/zakaria5729/flutter_native_speech_to_text
 repository: https://github.com/zakaria5729/flutter_native_speech_to_text
 issue_tracker: https://github.com/zakaria5729/flutter_native_speech_to_text/issues
 
 topics:
   - speech-to-text
-  - voice
-  - recognizer-intent
   - android
+  - ios
   - web
+  - desktop
 
 environment:
   sdk: '>=3.4.0 <4.0.0'
@@ -35,6 +35,14 @@ flutter:
         package: com.zakaria5729.flutter_native_speech_to_text
         pluginClass: FlutterNativeSpeechToTextPlugin
       ios:
+        pluginClass: FlutterNativeSpeechToTextPlugin
+        sharedDarwinSource: true
+      macos:
+        pluginClass: FlutterNativeSpeechToTextPlugin
+        sharedDarwinSource: true
+      windows:
+        pluginClass: FlutterNativeSpeechToTextPluginCApi
+      linux:
         pluginClass: FlutterNativeSpeechToTextPlugin
       web:
         pluginClass: FlutterNativeSpeechToTextWeb

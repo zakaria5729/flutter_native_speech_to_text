@@ -1,7 +1,10 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_native_speech_to_text/flutter_native_speech_to_text.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('FlutterNativeSpeechToText', () {
     test('SpeechResult.fromMap creates correct object', () {
       final map = {
@@ -45,6 +48,42 @@ void main() {
       expect(exception.message, 'Test error');
       expect(exception.code, isNull);
       expect(exception.toString(), 'SpeechToTextException: Test error');
+    });
+  });
+
+  group('isLanguageSupported', () {
+    const channel =
+        MethodChannel('com.zakaria5729/flutter_native_speech_to_text');
+    final messenger =
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+
+    tearDown(() => messenger.setMockMethodCallHandler(channel, null));
+
+    test('passes the language and returns the platform answer', () async {
+      MethodCall? received;
+      messenger.setMockMethodCallHandler(channel, (call) async {
+        received = call;
+        return true;
+      });
+
+      expect(
+          await FlutterNativeSpeechToText.isLanguageSupported('en-US'), isTrue);
+      expect(received?.method, 'isLanguageSupported');
+      expect(received?.arguments, {'language': 'en-US'});
+    });
+
+    test('returns false when the platform has no plugin', () async {
+      expect(await FlutterNativeSpeechToText.isLanguageSupported('bn-BD'),
+          isFalse);
+    });
+
+    test('returns false on a platform error', () async {
+      messenger.setMockMethodCallHandler(channel, (call) async {
+        throw PlatformException(code: 'ERROR', message: 'boom');
+      });
+
+      expect(await FlutterNativeSpeechToText.isLanguageSupported('en-US'),
+          isFalse);
     });
   });
 }

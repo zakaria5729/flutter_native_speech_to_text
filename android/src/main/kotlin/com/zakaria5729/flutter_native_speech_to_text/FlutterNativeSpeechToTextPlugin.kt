@@ -1,6 +1,8 @@
 package com.zakaria5729.flutter_native_speech_to_text
 
 import android.app.Activity
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.speech.RecognizerIntent
@@ -55,6 +57,14 @@ class FlutterNativeSpeechToTextPlugin : FlutterPlugin, MethodCallHandler, Activi
     override fun onMethodCall(call: MethodCall, result: Result) {
         when (call.method) {
             "isAvailable" -> result.success(isRecognizerAvailable())
+            "isLanguageSupported" -> {
+                val language = (call.arguments as? Map<*, *>)?.get("language") as? String
+                if (language.isNullOrBlank()) {
+                    result.error("INVALID_ARGUMENT", "language is required", null)
+                } else {
+                    checkLanguageSupported(language, result)
+                }
+            }
             "listen" -> {
                 @Suppress("UNCHECKED_CAST")
                 val arguments = call.arguments as? Map<String, Any?> ?: emptyMap()
@@ -81,6 +91,43 @@ class FlutterNativeSpeechToTextPlugin : FlutterPlugin, MethodCallHandler, Activi
             PackageManager.MATCH_DEFAULT_ONLY
         )
         return activities.isNotEmpty()
+    }
+
+    private fun checkLanguageSupported(language: String, result: Result) {
+        val activity = hostActivity
+        if (activity == null || !isRecognizerAvailable()) {
+            result.success(false)
+            return
+        }
+        val detailsIntent = RecognizerIntent.getVoiceDetailsIntent(activity)
+        if (detailsIntent == null) {
+            result.success(true)
+            return
+        }
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                val supported = getResultExtras(false)
+                    ?.getStringArrayList(RecognizerIntent.EXTRA_SUPPORTED_LANGUAGES)
+                    ?: intent?.getStringArrayListExtra(RecognizerIntent.EXTRA_SUPPORTED_LANGUAGES)
+                result.success(supported.isNullOrEmpty() || matchesLanguage(language, supported))
+            }
+        }
+        try {
+            activity.sendOrderedBroadcast(
+                detailsIntent, null, receiver, null, Activity.RESULT_OK, null, null
+            )
+        } catch (e: Exception) {
+            result.success(true)
+        }
+    }
+
+    private fun normalizeTag(tag: String) = tag.replace('_', '-').lowercase()
+
+    private fun matchesLanguage(language: String, supported: List<String>): Boolean {
+        val wanted = normalizeTag(language)
+        val tags = supported.map(::normalizeTag)
+        if (wanted in tags) return true
+        return '-' !in wanted && tags.any { it.substringBefore('-') == wanted }
     }
 
     private fun startRecognition(arguments: Map<String, Any?>, result: Result) {

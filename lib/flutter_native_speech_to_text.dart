@@ -1,4 +1,4 @@
-/// A Flutter plugin for native speech-to-text using Android's RecognizerIntent ACTION_RECOGNIZE_SPEECH.
+/// A Flutter plugin for native speech-to-text on Android, iOS, macOS and web.
 library flutter_native_speech_to_text;
 
 import 'dart:async';
@@ -19,12 +19,39 @@ class FlutterNativeSpeechToText {
       debugPrint('Error checking availability: ${e.message}');
       return false;
     } on MissingPluginException catch (e) {
-      debugPrint('MissingPluginException (iOS stub or release build): $e');
+      debugPrint(
+          'MissingPluginException (unsupported platform or release build): $e');
       return false;
     }
   }
 
-  /// Starts listening for speech input using Android's native RecognizerIntent.
+  /// Checks whether [language] (e.g. "en-US", "bn-BD") can be recognized on
+  /// the current platform.
+  ///
+  /// Returns `false` when the language is not supported or the platform has no
+  /// speech recognition. A bare language code such as "en" matches any region.
+  ///
+  /// Android and web cannot always list their languages. When a recognizer
+  /// exists but reports no list, this returns `true` and any real problem is
+  /// reported by [listen].
+  static Future<bool> isLanguageSupported(String language) async {
+    try {
+      final bool? result = await _channel.invokeMethod<bool>(
+        'isLanguageSupported',
+        {'language': language},
+      );
+      return result ?? false;
+    } on PlatformException catch (e) {
+      debugPrint('Error checking language support: ${e.message}');
+      return false;
+    } on MissingPluginException catch (e) {
+      debugPrint(
+          'MissingPluginException (unsupported platform or release build): $e');
+      return false;
+    }
+  }
+
+  /// Starts listening for speech input using the platform's native recognizer.
   ///
   /// Returns the recognized [SpeechResult] on success, or throws [SpeechToTextException] on failure.
   ///
@@ -98,9 +125,10 @@ class FlutterNativeSpeechToText {
     } on PlatformException catch (e) {
       throw SpeechToTextException(e.message ?? 'Unknown error', code: e.code);
     } on MissingPluginException catch (e) {
-      debugPrint('MissingPluginException (iOS stub or release build): $e');
+      debugPrint(
+          'MissingPluginException (unsupported platform or release build): $e');
       throw SpeechToTextException(
-        'Speech recognition not available on this platform (iOS is not supported)',
+        'Speech recognition not available on this platform',
         code: 'PLATFORM_NOT_SUPPORTED',
       );
     }
@@ -113,7 +141,8 @@ class FlutterNativeSpeechToText {
     } on PlatformException catch (e) {
       throw SpeechToTextException(e.message ?? 'Failed to stop', code: e.code);
     } on MissingPluginException catch (e) {
-      debugPrint('MissingPluginException (iOS stub or release build): $e');
+      debugPrint(
+          'MissingPluginException (unsupported platform or release build): $e');
       throw SpeechToTextException(
         'Speech recognition not available on this platform',
         code: 'PLATFORM_NOT_SUPPORTED',
@@ -129,7 +158,8 @@ class FlutterNativeSpeechToText {
       throw SpeechToTextException(e.message ?? 'Failed to cancel',
           code: e.code);
     } on MissingPluginException catch (e) {
-      debugPrint('MissingPluginException (iOS stub or release build): $e');
+      debugPrint(
+          'MissingPluginException (unsupported platform or release build): $e');
       throw SpeechToTextException(
         'Speech recognition not available on this platform',
         code: 'PLATFORM_NOT_SUPPORTED',

@@ -27,6 +27,8 @@ class FlutterNativeSpeechToTextWeb {
     switch (call.method) {
       case 'isAvailable':
         return _constructor() != null;
+      case 'isLanguageSupported':
+        return _constructor() != null;
       case 'listen':
         final args = (call.arguments as Map?)?.cast<String, dynamic>() ??
             const <String, dynamic>{};
@@ -51,7 +53,13 @@ class FlutterNativeSpeechToTextWeb {
     }
   }
 
+  static bool get _isBrave {
+    final navigator = globalContext.getProperty<JSObject?>('navigator'.toJS);
+    return navigator != null && navigator.has('brave');
+  }
+
   static JSFunction? _constructor() {
+    if (_isBrave) return null;
     for (final name in const ['SpeechRecognition', 'webkitSpeechRecognition']) {
       if (globalContext.has(name)) {
         final value = globalContext.getProperty<JSAny?>(name.toJS);
@@ -78,8 +86,11 @@ class FlutterNativeSpeechToTextWeb {
     if (constructor == null) {
       throw PlatformException(
         code: 'NO_RECOGNIZER',
-        message: 'This browser does not support the Web Speech API. '
-            'Use a Chromium-based browser or Safari.',
+        message: _isBrave
+            ? 'Brave blocks the speech recognition service. '
+                'Use Chrome, Edge or Safari.'
+            : 'This browser does not support the Web Speech API. '
+                'Use Chrome, Edge or Safari.',
       );
     }
 
@@ -180,7 +191,9 @@ class FlutterNativeSpeechToTextWeb {
       case 'network':
         return PlatformException(
           code: 'NETWORK',
-          message: 'A network error occurred during speech recognition',
+          message:
+              'The browser could not reach its speech recognition service. '
+              'Check your connection; some browsers block this service.',
         );
       case 'language-not-supported':
         return PlatformException(

@@ -36,7 +36,7 @@ Add `flutter_native_speech_to_text` to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  flutter_native_speech_to_text: ^1.0.0
+  flutter_native_speech_to_text: ^1.1.1
 ```
 
 Or run:
@@ -180,6 +180,7 @@ When a `SpeechToTextException` is thrown, the `code` property provides specific 
 | `ERROR` | An exception occurred while launching the intent. |
 | `PLATFORM_NOT_SUPPORTED` | The method was called on iOS, which is not supported yet (no crash, just this error). |
 | `PERMISSION_DENIED` | *(Web)* Microphone permission was denied. |
+| `SERVICE_NOT_ALLOWED` | *(Web)* The browser blocked its speech service, for example Safari with Dictation off or the language not installed. |
 | `NO_MICROPHONE` | *(Web)* No usable microphone was found. |
 | `NETWORK` | *(Web)* The browser's speech service could not be reached. |
 | `LANGUAGE_NOT_SUPPORTED` | *(Web)* The requested `language` is not supported by the browser. |
@@ -193,8 +194,13 @@ On web the plugin uses the browser's [Web Speech API](https://developer.mozilla.
 No setup or extra dependencies are needed - the same `listen()`, `stop()`, `cancel()`
 and `isAvailable()` calls work unchanged.
 
-- **Browser support**: Chrome, Edge and Safari. Firefox does not implement speech
-  recognition, so `isAvailable()` returns `false` and `listen()` throws `NO_RECOGNIZER`.
+- **Browser support**:
+  - Chrome and Edge: supported, including languages such as `bn-BD`.
+  - Safari: supported, but it uses the macOS speech engine, so Dictation must be
+    turned on and the requested `language` must be installed under System Settings
+    > Keyboard > Dictation. Otherwise `listen()` throws `SERVICE_NOT_ALLOWED`.
+  - Firefox: does not implement speech recognition, so `isAvailable()` returns
+    `false` and `listen()` throws `NO_RECOGNIZER`.
 - **Secure context**: the page must be served over HTTPS (or `localhost`), and the
   user must grant microphone permission when prompted.
 - **Server-side recognition**: Chrome sends audio to Google's servers, so an internet

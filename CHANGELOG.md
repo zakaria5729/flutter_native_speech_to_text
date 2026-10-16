@@ -1,3 +1,13 @@
+## 1.1.1
+
+* Web: `listen()` now completes as soon as the browser reports an error, instead
+  of waiting for an end event that Safari may never send.
+* Web: `stop()` falls back to the latest result if the browser does not end the
+  session within three seconds.
+* Web: new `SERVICE_NOT_ALLOWED` error code, separate from `PERMISSION_DENIED`,
+  for browsers that block their speech service (for example Safari when the
+  requested language is not installed for Dictation).
+
 ## 1.1.0
 
 * Added web support using the browser's Web Speech API (`SpeechRecognition` /

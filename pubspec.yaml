@@ -1,6 +1,6 @@
 name: flutter_native_speech_to_text
 description: A Flutter plugin for native speech-to-text using Android's RecognizerIntent ACTION_RECOGNIZE_SPEECH and the browser's Web Speech API on web.
-version: 1.1.0
+version: 1.1.1
 homepage: https://github.com/zakaria5729/flutter_native_speech_to_text
 repository: https://github.com/zakaria5729/flutter_native_speech_to_text
 issue_tracker: https://github.com/zakaria5729/flutter_native_speech_to_text/issues

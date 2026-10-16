@@ -10,6 +10,8 @@ class FlutterNativeSpeechToTextWeb {
 
   _SpeechRecognition? _recognition;
   Completer<Map<String, dynamic>?>? _pending;
+  Timer? _stopTimer;
+  void Function()? _forceFinish;
 
   static void registerWith(Registrar registrar) {
     final channel = MethodChannel(
@@ -30,7 +32,13 @@ class FlutterNativeSpeechToTextWeb {
             const <String, dynamic>{};
         return _listen(args);
       case 'stop':
-        _recognition?.stop();
+        final recognition = _recognition;
+        if (recognition != null) {
+          recognition.stop();
+          _stopTimer?.cancel();
+          _stopTimer =
+              Timer(const Duration(seconds: 3), () => _forceFinish?.call());
+        }
         return null;
       case 'cancel':
         _cancel();
@@ -80,19 +88,32 @@ class FlutterNativeSpeechToTextWeb {
     _recognition = recognition;
     _pending = completer;
 
-    void finish([Object? error]) {
+    Map<String, dynamic>? latest;
+    PlatformException? failure;
+
+    void finish() {
+      _stopTimer?.cancel();
+      _stopTimer = null;
+      _forceFinish = null;
       if (identical(_pending, completer)) {
         _pending = null;
         _recognition = null;
       }
       if (completer.isCompleted) return;
+      final error = failure;
       if (error != null) {
         completer.completeError(error);
+      } else {
+        completer.complete(latest);
       }
     }
 
-    Map<String, dynamic>? latest;
-    PlatformException? failure;
+    _forceFinish = () {
+      try {
+        recognition.abort();
+      } catch (_) {}
+      finish();
+    };
 
     recognition
       ..lang = (args['language'] ??
@@ -106,18 +127,9 @@ class FlutterNativeSpeechToTextWeb {
       }).toJS
       ..onerror = ((_SpeechRecognitionErrorEvent event) {
         failure = _mapError(event.error, event.message);
+        _forceFinish?.call();
       }).toJS
-      ..onend = (() {
-        final error = failure;
-        if (!completer.isCompleted) {
-          if (error != null) {
-            completer.completeError(error);
-          } else {
-            completer.complete(latest);
-          }
-        }
-        finish();
-      }).toJS;
+      ..onend = finish.toJS;
 
     try {
       recognition.start();
@@ -134,6 +146,9 @@ class FlutterNativeSpeechToTextWeb {
   void _cancel() {
     final completer = _pending;
     final recognition = _recognition;
+    _stopTimer?.cancel();
+    _stopTimer = null;
+    _forceFinish = null;
     _pending = null;
     _recognition = null;
     if (completer != null && !completer.isCompleted) completer.complete(null);
@@ -146,10 +161,16 @@ class FlutterNativeSpeechToTextWeb {
       case 'aborted':
         return null;
       case 'not-allowed':
-      case 'service-not-allowed':
         return PlatformException(
           code: 'PERMISSION_DENIED',
-          message: 'Microphone permission was denied',
+          message: 'Microphone permission was denied for this site',
+        );
+      case 'service-not-allowed':
+        return PlatformException(
+          code: 'SERVICE_NOT_ALLOWED',
+          message: 'The browser blocked its speech recognition service. '
+              'Enable Dictation in system settings, install the requested '
+              'language there, and allow speech recognition for this site.',
         );
       case 'audio-capture':
         return PlatformException(

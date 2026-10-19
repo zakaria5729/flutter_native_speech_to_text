@@ -333,6 +333,12 @@ For a complete working sample application, check out the [example](example) fold
 
 ---
 
+## Author
+
+Created and maintained by [zakaria5729](https://github.com/zakaria5729). Issues and pull requests are welcome on [GitHub](https://github.com/zakaria5729/flutter_native_speech_to_text).
+
+---
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

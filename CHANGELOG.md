@@ -1,3 +1,7 @@
+## 1.3.1
+
+* Added an author section to the README and credited the author in the package description.
+
 ## 1.3.0
 
 * Windows: real speech recognition using the Windows speech recognizer

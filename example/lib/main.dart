@@ -28,14 +28,27 @@ class SpeechToTextHomePage extends StatefulWidget {
   State<SpeechToTextHomePage> createState() => _SpeechToTextHomePageState();
 }
 
+enum _AppLanguage {
+  bangla('bn-BD', 'বাংলা'),
+  english('en-US', 'English');
+
+  const _AppLanguage(this.code, this.label);
+
+  final String code;
+  final String label;
+}
+
 class _SpeechToTextHomePageState extends State<SpeechToTextHomePage> {
   final String _languageModel = 'free_form';
-  final String _language = 'bn-BD';
   final int _minimumSpeechLengthMillis = 10000;
+
+  _AppLanguage _appLanguage = _AppLanguage.bangla;
+  String get _language => _appLanguage.code;
 
   String _recognizedText = 'Press the button and speak...';
   bool _isListening = false;
   bool _isAvailable = false;
+  bool _isLanguageSupported = true;
   List<String> _alternatives = [];
   List<double> _confidenceScores = [];
 
@@ -47,9 +60,19 @@ class _SpeechToTextHomePageState extends State<SpeechToTextHomePage> {
 
   Future<void> _checkAvailability() async {
     final available = await FlutterSpeechToText.isAvailable();
+    final supported = await FlutterSpeechToText.isLanguageSupported(_language);
+    if (!mounted) return;
     setState(() {
       _isAvailable = available;
+      _isLanguageSupported = supported;
     });
+  }
+
+  Future<void> _onLanguageChanged(_AppLanguage language) async {
+    setState(() {
+      _appLanguage = language;
+    });
+    await _checkAvailability();
   }
 
   Future<void> _startListening() async {
@@ -132,6 +155,44 @@ class _SpeechToTextHomePageState extends State<SpeechToTextHomePage> {
                             color: _isListening ? Colors.red : Colors.green,
                             fontWeight: FontWeight.bold,
                           ),
+                    ),
+                    if (!_isLanguageSupported) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        '${_appLanguage.label} is not supported on this device/browser.',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Colors.red,
+                            ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Language:',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    SegmentedButton<_AppLanguage>(
+                      segments: _AppLanguage.values
+                          .map((language) => ButtonSegment(
+                                value: language,
+                                label: Text(language.label),
+                              ))
+                          .toList(),
+                      selected: {_appLanguage},
+                      onSelectionChanged: (selection) {
+                        if (_isListening) return;
+                        _onLanguageChanged(selection.first);
+                      },
                     ),
                   ],
                 ),
@@ -223,8 +284,9 @@ class _SpeechToTextHomePageState extends State<SpeechToTextHomePage> {
               children: [
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed:
-                        _isAvailable && !_isListening ? _startListening : null,
+                    onPressed: _isAvailable && _isLanguageSupported && !_isListening
+                        ? _startListening
+                        : null,
                     icon: const Icon(Icons.mic),
                     label: const Text('Start Listening'),
                     style: ElevatedButton.styleFrom(

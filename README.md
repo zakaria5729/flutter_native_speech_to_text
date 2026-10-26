@@ -5,7 +5,7 @@
 
 A lightweight Flutter plugin for speech-to-text recognition with one Dart API on every platform: Android's native `RecognizerIntent.ACTION_RECOGNIZE_SPEECH`, Apple's Speech framework on iOS and macOS, the Windows speech recognizer, Vosk on Linux, and the browser's Web Speech API on web.
 
-🚀 **[Live web demo](https://zakaria5729.github.io/flutter_native_speech_to_text/)** — try the example app directly in your browser. Tested in Chrome; see [Web behaviour](#web-behaviour) for other browsers.
+🚀 **[Live web demo](https://zakaria5729.github.io/flutter_native_speech_to_text/)** — try the example app directly in your browser, with a Bangla/English language switch. Tested in Chrome; see [Web behaviour](#web-behaviour) for other browsers.
 
 ---
 

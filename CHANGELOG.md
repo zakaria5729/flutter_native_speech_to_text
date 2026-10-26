@@ -1,3 +1,8 @@
+## 1.3.2
+
+* Added a live web demo link (hosted on GitHub Pages) to the README.
+* The example app now has a Bangla/English language switch.
+
 ## 1.3.1
 
 * Added an author section to the README and credited the author in the package description.
